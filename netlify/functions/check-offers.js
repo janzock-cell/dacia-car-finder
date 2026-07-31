@@ -73,9 +73,9 @@ exports.handler = async function(event, context) {
     console.log("Nutze Demo-Daten (kein SCRAPER_API_KEY hinterlegt oder keine neuen Angebote online).");
     foundOffers.push({
       model: "Dacia Duster III TCe 130 Extreme",
-      price: 18500, // Grüner Deal
+      price: 18650, // Grüner Deal (Bestpreis)
       year: 2024,
-      location: "Beverungen (35 km von Bad Driburg)",
+      location: "Mönchengladbach (Erzbergerstraße 130)",
       portal: "eBay Kleinanzeigen",
       link: "https://www.kleinanzeigen.de/s-anzeige/dacia-duster-iii-tce-130-extreme-klima-navi-360c-kamer/3455346213-216-1965"
     });
@@ -110,7 +110,7 @@ exports.handler = async function(event, context) {
       }
     }
 
-    // E-Mail Benachrichtigung senden (entweder via Web3Forms oder per SMTP)
+    // E-Mail Benachrichtigung senden (entweder via Web3Forms, SMTP oder native Netlify Forms)
     const WEB3FORMS_KEY = process.env.WEB3FORMS_KEY;
     const SMTP_USER = process.env.SMTP_USER;
     const SMTP_PASS = process.env.SMTP_PASS;
@@ -161,7 +161,26 @@ exports.handler = async function(event, context) {
           console.error("SMTP Sende-Fehler:", err);
         }
       } else {
-        console.log(`E-Mail an ${EMAIL_ADDRESS} nicht gesendet: Weder WEB3FORMS_KEY noch SMTP_USER/SMTP_PASS in den Netlify-Umgebungsvariablen hinterlegt.`);
+        // Option C: Native Netlify Forms Übermittlung (schickt Mail an den Netlify-Account-Inhaber janzock@googlemail.com)
+        try {
+          const bodyData = new URLSearchParams();
+          bodyData.append('form-name', 'dacia-deal-alerts');
+          bodyData.append('email', EMAIL_ADDRESS);
+          bodyData.append('model', bestOffer.model);
+          bodyData.append('price', `${bestOffer.price.toLocaleString('de-DE')} €`);
+          bodyData.append('location', bestOffer.location);
+          bodyData.append('link', bestOffer.link);
+          bodyData.append('specs', `Gefunden über Suchlauf auf ${bestOffer.portal}`);
+
+          await fetch('https://manni-dacia.netlify.app', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: bodyData.toString()
+          });
+          console.log(`E-Mail-Benachrichtigung via Netlify Forms erfolgreich an ${EMAIL_ADDRESS} übermittelt.`);
+        } catch (err) {
+          console.error("Netlify Forms Backend-Sende-Fehler:", err);
+        }
       }
     }
   }
