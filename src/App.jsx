@@ -168,6 +168,9 @@ function App() {
   const [emailAddress, setEmailAddress] = useState('');
   const [telegramToken, setTelegramToken] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
+  const [browserNotificationAllowed, setBrowserNotificationAllowed] = useState(
+    typeof Notification !== 'undefined' ? Notification.permission === 'granted' : false
+  );
   
   const [offers, setOffers] = useState(INITIAL_OFFERS);
   const [toast, setToast] = useState(null);
@@ -299,6 +302,24 @@ function App() {
     }
   };
 
+  // Browser Benachrichtigung aktivieren
+  const requestBrowserNotificationPermission = () => {
+    if (typeof Notification !== 'undefined') {
+      Notification.requestPermission().then(permission => {
+        setBrowserNotificationAllowed(permission === 'granted');
+        if (permission === 'granted') {
+          showToast('Aktiviert!', 'Browser-Benachrichtigungen sind jetzt aktiv.');
+          new Notification("Dacia Finder", { 
+            body: "Benachrichtigungen sind erfolgreich aktiviert! 🚗",
+            icon: '/favicon.svg'
+          });
+        }
+      });
+    } else {
+      showToast('Fehler', 'Dein Browser unterstützt keine Benachrichtigungen.');
+    }
+  };
+
   // Simulation für neue Angebote Scannen
   const handleScan = () => {
     setIsScanning(true);
@@ -328,6 +349,14 @@ function App() {
       sendWhatsAppNotification(msg);
       sendEmailNotification(msg);
       sendTelegramNotification(msg);
+
+      // Browser Push-Benachrichtigung auslösen
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        new Notification('Neuer Dacia Deal! 🚗', {
+          body: `${newOffer.model} für ${newOffer.price.toLocaleString('de-DE')} € in ${newOffer.location}`,
+          icon: '/favicon.svg'
+        });
+      }
     }, 3000);
   };
 
@@ -576,6 +605,22 @@ function App() {
             <p style={{ color: 'var(--text-secondary)', marginBottom: '20px', fontSize: '0.95rem' }}>
               Wenn neue Angebote in deiner Preisklasse (Grüner oder Gelber Deal) gefunden werden, schicken wir dir eine Nachricht mit Direktlink.
             </p>
+
+            {/* 1-Click Browser-Benachrichtigungen */}
+            <div style={{ marginBottom: '25px', background: 'rgba(46, 204, 113, 0.05)', border: '1px dashed rgba(46, 204, 113, 0.3)', padding: '16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+              <div style={{ flex: '1', minWidth: '280px' }}>
+                <strong style={{ display: 'block', color: 'var(--accent-green)', fontSize: '1rem', marginBottom: '4px' }}>🔔 Einfachste Option: Browser-Benachrichtigungen</strong>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Erfordert keine API-Keys oder Konten. Klicke einfach auf den Button, um Direkt-Benachrichtigungen auf deinem PC oder Android-Handy zu erlauben!</span>
+              </div>
+              <button 
+                type="button" 
+                className="btn-primary" 
+                onClick={requestBrowserNotificationPermission}
+                style={{ background: browserNotificationAllowed ? 'var(--text-muted)' : 'var(--accent-green)', color: browserNotificationAllowed ? 'var(--text-primary)' : '#000', fontWeight: 'bold' }}
+              >
+                {browserNotificationAllowed ? '✓ Aktiviert' : 'Jetzt aktivieren'}
+              </button>
+            </div>
 
             <div className="notification-settings">
               <div className="notification-channels">
