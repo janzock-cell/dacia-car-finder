@@ -45,7 +45,7 @@ const INITIAL_OFFERS = [
   },
   {
     id: 2,
-    model: 'Dacia Duster Expression 1.0 TCe 100 ECO-G',
+    model: 'Dacia Duster ECO-G 100 Essential',
     price: 17490, // Grün (Bestpreis)
     year: 2025,
     location: 'Brandenburg a.d. Havel',
@@ -57,7 +57,7 @@ const INITIAL_OFFERS = [
   },
   {
     id: 3,
-    model: 'Dacia Duster ECO-G 100 Expression',
+    model: 'Dacia Duster III Journey',
     price: 17490, // Grün (Bestpreis)
     year: 2025,
     location: 'Grasberg',
@@ -69,7 +69,7 @@ const INITIAL_OFFERS = [
   },
   {
     id: 4,
-    model: 'Dacia Duster Diesel',
+    model: 'Dacia Duster Journey mild hybrid 130',
     price: 17000, // Grün (Bestpreis)
     year: 2024,
     location: 'Kirchlinteln',
@@ -380,25 +380,34 @@ function App() {
         dateAdded: 'Gerade eben'
       };
 
-      setOffers(prev => [newOffer, ...prev]);
-      setIsScanning(false);
-      showToast('Neues Angebot gefunden!', 'Ein Dacia Duster III TCe 130 Extreme für 18.650 € wurde registriert.');
-      
-      const msg = `🔥 Neues Dacia Angebot! 🔥\nModell: ${newOffer.model}\nPreis: ${newOffer.price}€ (Grüner Deal! ⭐)\nAusstattung: ${newOffer.specs.join(', ')}\nOrt: ${newOffer.location}\nDirektlink: ${getDirectSearchLink(newOffer.portal, newOffer.model, newOffer.specs)}`;
-      
-      // Benachrichtigungen nur auslösen, wenn Eingaben vorhanden sind (verhindert Fehlermeldungen bei leeren Einstellungen)
-      if (whatsappPhone && whatsappApiKey) {
-        sendWhatsAppNotification(msg);
-      }
-      if (emailAddress) {
-        sendEmailNotification(msg);
-      }
-      if (telegramToken && telegramChatId) {
-        sendTelegramNotification(msg);
-      }
+      setOffers(prev => {
+        if (prev.some(o => o.link === newOffer.link)) {
+          showToast('Keine neuen Angebote', 'Es wurden keine neueren Dacia Angebote auf Kleinanzeigen gefunden.');
+          setIsScanning(false);
+          return prev;
+        }
 
-      // Browser Push-Benachrichtigung auslösen
-      triggerBrowserNotification('Neuer Dacia Deal! 🚗', `${newOffer.model} für ${newOffer.price.toLocaleString('de-DE')} € in ${newOffer.location}`);
+        setIsScanning(false);
+        showToast('Neues Angebot gefunden!', 'Ein Dacia Duster III TCe 130 Extreme für 18.650 € wurde registriert.');
+        
+        const msg = `🔥 Neues Dacia Angebot! 🔥\nModell: ${newOffer.model}\nPreis: ${newOffer.price}€ (Grüner Deal! ⭐)\nAusstattung: ${newOffer.specs.join(', ')}\nOrt: ${newOffer.location}\nDirektlink: ${getDirectSearchLink(newOffer.portal, newOffer.model, newOffer.specs)}`;
+        
+        // Benachrichtigungen nur auslösen, wenn Eingaben vorhanden sind (verhindert Fehlermeldungen bei leeren Einstellungen)
+        if (whatsappPhone && whatsappApiKey) {
+          sendWhatsAppNotification(msg);
+        }
+        if (emailAddress) {
+          sendEmailNotification(msg);
+        }
+        if (telegramToken && telegramChatId) {
+          sendTelegramNotification(msg);
+        }
+
+        // Browser Push-Benachrichtigung auslösen
+        triggerBrowserNotification('Neuer Dacia Deal! 🚗', `${newOffer.model} für ${newOffer.price.toLocaleString('de-DE')} € in ${newOffer.location}`);
+        
+        return [newOffer, ...prev];
+      });
     }, 3000);
   };
 
