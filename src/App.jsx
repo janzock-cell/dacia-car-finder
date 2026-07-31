@@ -45,11 +45,11 @@ const INITIAL_OFFERS = [
   },
   {
     id: 2,
-    model: 'Dacia Duster III Expression TCe 130',
+    model: 'Dacia Duster Expression 1.0 TCe 100 ECO-G',
     price: 17490, // Grün (Bestpreis)
-    year: 2024,
-    location: 'Paderborn (Umfeld)',
-    specs: ['Mild-Hybrid', 'Benzin', 'Klima', 'Navi'],
+    year: 2025,
+    location: 'Brandenburg a.d. Havel',
+    specs: ['LPG (Autogas)', 'Klima', 'Navi', '16.922 km'],
     portal: 'Mobile.de',
     type: 'Gebrauchtwagen',
     link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=461879265', // Echter aktiver Link
@@ -57,11 +57,11 @@ const INITIAL_OFFERS = [
   },
   {
     id: 3,
-    model: 'Dacia Duster ECO-G 100 Essential',
-    price: 17000, // Grün (Bestpreis)
-    year: 2024,
-    location: 'Warburg (Umfeld)',
-    specs: ['Gas/Benzin (LPG)', 'Klima', 'Bluetooth'],
+    model: 'Dacia Duster ECO-G 100 Expression',
+    price: 17490, // Grün (Bestpreis)
+    year: 2025,
+    location: 'Grasberg',
+    specs: ['LPG (Autogas)', 'Klima', 'Tempomat', '5.000 km'],
     portal: 'Mobile.de',
     type: 'Gebrauchtwagen',
     link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=456422207', // Echter aktiver Link
@@ -69,13 +69,13 @@ const INITIAL_OFFERS = [
   },
   {
     id: 4,
-    model: 'Dacia Duster Expression TCe 130 (Neuwagen)',
-    price: 21200, // Gelb
+    model: 'Dacia Duster Diesel',
+    price: 17000, // Grün (Bestpreis)
     year: 2024,
-    location: 'Bielefeld (Umfeld)',
-    specs: ['Mild-Hybrid', 'Benzin', 'Klima'],
+    location: 'Kirchlinteln',
+    specs: ['Diesel (116 PS)', 'Klima', '49.764 km'],
     portal: 'Mobile.de',
-    type: 'Neuwagen',
+    type: 'Gebrauchtwagen',
     link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=461266517', // Echter aktiver Link
     dateAdded: 'Vor 1 Tag'
   }
@@ -325,6 +325,26 @@ function App() {
     }
   };
 
+  // Mobile- & PC-kompatible Browser-Benachrichtigung (über Service Worker falls vorhanden)
+  const triggerBrowserNotification = (title, body) => {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.showNotification(title, {
+            body: body,
+            icon: '/favicon.svg',
+            badge: '/favicon.svg',
+            vibrate: [200, 100, 200]
+          });
+        }).catch(() => {
+          new Notification(title, { body, icon: '/favicon.svg' });
+        });
+      } else {
+        new Notification(title, { body, icon: '/favicon.svg' });
+      }
+    }
+  };
+
   // Browser Benachrichtigung aktivieren
   const requestBrowserNotificationPermission = () => {
     if (typeof Notification !== 'undefined') {
@@ -332,10 +352,7 @@ function App() {
         setBrowserNotificationAllowed(permission === 'granted');
         if (permission === 'granted') {
           showToast('Aktiviert!', 'Browser-Benachrichtigungen sind jetzt aktiv.');
-          new Notification("Dacia Finder", { 
-            body: "Benachrichtigungen sind erfolgreich aktiviert! 🚗",
-            icon: '/favicon.svg'
-          });
+          triggerBrowserNotification("Dacia Finder", "Benachrichtigungen sind erfolgreich aktiviert! 🚗");
         }
       });
     } else {
@@ -381,12 +398,7 @@ function App() {
       }
 
       // Browser Push-Benachrichtigung auslösen
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        new Notification('Neuer Dacia Deal! 🚗', {
-          body: `${newOffer.model} für ${newOffer.price.toLocaleString('de-DE')} € in ${newOffer.location}`,
-          icon: '/favicon.svg'
-        });
-      }
+      triggerBrowserNotification('Neuer Dacia Deal! 🚗', `${newOffer.model} für ${newOffer.price.toLocaleString('de-DE')} € in ${newOffer.location}`);
     }, 3000);
   };
 
