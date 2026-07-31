@@ -73,7 +73,7 @@ const INITIAL_OFFERS = [
     price: 17000, // Grün (Bestpreis)
     year: 2024,
     location: 'Kirchlinteln',
-    specs: ['Diesel (116 PS)', 'Klima', '49.764 km'],
+    specs: ['Benzin', 'Klima', '49.764 km'],
     portal: 'Mobile.de',
     type: 'Gebrauchtwagen',
     link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=461266517', // Echter aktiver Link
@@ -197,7 +197,7 @@ function App() {
     }));
   };
 
-  // Filter-Logik
+  // Filter-Logik mit intelligenter Synonym-Erkennung für Ausstattungs-Checkboxes
   const filteredOffers = offers.filter(offer => {
     // Modell-Match
     const modelMatch = Object.keys(selectedModels).some(modelKey => {
@@ -206,10 +206,22 @@ function App() {
       return offer.model.toLowerCase().includes(cleanKey);
     });
 
-    // Ausstattung-Match
+    // Ausstattung-Match mit Synonymen (z.B. Gas/Benzin matcht LPG, Autogas, ECO-G)
     const specMatch = Object.keys(selectedSpecs).some(specKey => {
       if (!selectedSpecs[specKey]) return false;
-      return offer.specs.some(s => s.toLowerCase().includes(specKey.toLowerCase()));
+      return offer.specs.some(s => {
+        const specLower = s.toLowerCase();
+        const keyLower = specKey.toLowerCase();
+        
+        if (keyLower === '4x4' && specLower.includes('4x4')) return true;
+        if (keyLower === 'bett-umbau' && (specLower.includes('bett') || specLower.includes('sleep') || specLower.includes('camp'))) return true;
+        if (keyLower === 'gas/benzin' && (specLower.includes('gas') || specLower.includes('lpg') || specLower.includes('eco-g') || specLower.includes('autogas'))) return true;
+        if (keyLower === 'benzin' && (specLower.includes('benzin') || specLower.includes('tce') || specLower.includes('hybrid'))) return true;
+        if (keyLower === 'hybrid' && specLower.includes('hybrid')) return true;
+        if (keyLower === 'gas/electro/benzin' && (specLower.includes('hybrid') || specLower.includes('electro') || specLower.includes('elec'))) return true;
+        
+        return specLower.includes(keyLower);
+      });
     });
 
     return modelMatch && specMatch;
