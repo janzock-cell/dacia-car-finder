@@ -23,6 +23,12 @@ const getDirectSearchLink = (portal, modelName, specs = []) => {
   return '#';
 };
 
+// Hilfsfunktion zur Bereinigung von Links gegen Referrer-Blocking (z.B. für Mobile.de & AutoScout24)
+const cleanLink = (url) => {
+  if (!url || url === '#') return '#';
+  return `https://href.li/?${url}`;
+};
+
 // Realistische Angebote mit echten, aktiven Direktlinks (Preise, Orte und Titel stimmen 100% überein)
 const INITIAL_OFFERS = [
   {
@@ -569,7 +575,7 @@ function App() {
                         {offer.price.toLocaleString('de-DE')} €
                       </div>
                       <a 
-                        href={offer.link || getDirectSearchLink(offer.portal, offer.model, offer.specs)} 
+                        href={cleanLink(offer.link || getDirectSearchLink(offer.portal, offer.model, offer.specs))} 
                         target="_blank" 
                         rel="noreferrer" 
                         className="btn-link"
