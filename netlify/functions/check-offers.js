@@ -110,37 +110,59 @@ exports.handler = async function(event, context) {
       }
     }
 
-    // E-Mail Benachrichtigung über SMTP senden
+    // E-Mail Benachrichtigung senden (entweder via Web3Forms oder per SMTP)
+    const WEB3FORMS_KEY = process.env.WEB3FORMS_KEY;
     const SMTP_USER = process.env.SMTP_USER;
     const SMTP_PASS = process.env.SMTP_PASS;
     const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
     const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
 
-    if (EMAIL_ADDRESS && SMTP_USER && SMTP_PASS) {
-      try {
-        const nodemailer = require('nodemailer');
-        const transporter = nodemailer.createTransport({
-          host: SMTP_HOST,
-          port: SMTP_PORT,
-          secure: SMTP_PORT === 465,
-          auth: {
-            user: SMTP_USER,
-            pass: SMTP_PASS
-          }
-        });
+    if (EMAIL_ADDRESS) {
+      if (WEB3FORMS_KEY) {
+        // Option A: Senden via Web3Forms (API-basiert)
+        try {
+          await fetch('https://api.web3forms.com/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              access_key: WEB3FORMS_KEY,
+              email: EMAIL_ADDRESS,
+              subject: '🚗 Neuer Dacia Deal gefunden!',
+              message: messageText,
+              from_name: 'Dacia Deal Finder'
+            })
+          });
+          console.log(`E-Mail-Benachrichtigung via Web3Forms erfolgreich an ${EMAIL_ADDRESS} gesendet.`);
+        } catch (err) {
+          console.error("Web3Forms Sende-Fehler:", err);
+        }
+      } else if (SMTP_USER && SMTP_PASS) {
+        // Option B: Senden via SMTP (Nodemailer)
+        try {
+          const nodemailer = require('nodemailer');
+          const transporter = nodemailer.createTransport({
+            host: SMTP_HOST,
+            port: SMTP_PORT,
+            secure: SMTP_PORT === 465,
+            auth: {
+              user: SMTP_USER,
+              pass: SMTP_PASS
+            }
+          });
 
-        await transporter.sendMail({
-          from: `"Dacia Deal Finder" <${SMTP_USER}>`,
-          to: EMAIL_ADDRESS,
-          subject: '🚗 Neuer Dacia Deal gefunden!',
-          text: messageText
-        });
-        console.log(`E-Mail-Benachrichtigung erfolgreich an ${EMAIL_ADDRESS} gesendet.`);
-      } catch (err) {
-        console.error("E-Mail Sende-Fehler:", err);
+          await transporter.sendMail({
+            from: `"Dacia Deal Finder" <${SMTP_USER}>`,
+            to: EMAIL_ADDRESS,
+            subject: '🚗 Neuer Dacia Deal gefunden!',
+            text: messageText
+          });
+          console.log(`E-Mail-Benachrichtigung via SMTP erfolgreich an ${EMAIL_ADDRESS} gesendet.`);
+        } catch (err) {
+          console.error("SMTP Sende-Fehler:", err);
+        }
+      } else {
+        console.log(`E-Mail an ${EMAIL_ADDRESS} nicht gesendet: Weder WEB3FORMS_KEY noch SMTP_USER/SMTP_PASS in den Netlify-Umgebungsvariablen hinterlegt.`);
       }
-    } else if (EMAIL_ADDRESS) {
-      console.log(`E-Mail an ${EMAIL_ADDRESS} nicht gesendet: SMTP_USER oder SMTP_PASS fehlen in den Umgebungsvariablen.`);
     }
   }
 

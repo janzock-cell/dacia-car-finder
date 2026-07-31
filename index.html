@@ -15,6 +15,16 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
   </head>
   <body>
+    <!-- Hidden form for Netlify Forms Email Alerts -->
+    <form name="dacia-deal-alerts" data-netlify="true" netlify-honeypot="bot-field" hidden>
+      <input type="email" name="email" />
+      <input type="text" name="model" />
+      <input type="text" name="price" />
+      <input type="text" name="location" />
+      <input type="text" name="link" />
+      <textarea name="specs"></textarea>
+    </form>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     
