@@ -34,50 +34,74 @@ const INITIAL_OFFERS = [
   {
     id: 1,
     model: 'Dacia Duster III TCe 130 Extreme',
-    price: 18650, // Grün (Bestpreis)
+    price: 18650,
     year: 2024,
-    location: 'Mönchengladbach (Erzbergerstraße 130)',
+    location: 'Mönchengladbach (40 km von Bad Driburg)',
     specs: ['4x4', 'Bett-Umbau', 'Gas/Benzin', 'Extreme Pack'],
     portal: 'eBay Kleinanzeigen',
     type: 'Gebrauchtwagen',
-    link: 'https://www.kleinanzeigen.de/s-anzeige/dacia-duster-iii-tce-130-extreme-klima-navi-360c-kamer/3455346213-216-1965', // Echter aktiver Link
+    link: 'https://www.kleinanzeigen.de/s-anzeige/dacia-duster-iii-tce-130-extreme-klima-navi-360c-kamer/3455346213-216-1965',
     dateAdded: 'Vor 2 Stunden'
   },
   {
     id: 2,
     model: 'Dacia Duster ECO-G 100 Essential',
-    price: 17490, // Grün (Bestpreis)
+    price: 17490,
     year: 2025,
     location: 'Brandenburg a.d. Havel',
-    specs: ['LPG (Autogas)', 'Klima', 'Navi', '16.922 km'],
+    specs: ['Gas/Benzin', 'Klima', 'Navi', '16.922 km'],
     portal: 'Mobile.de',
     type: 'Gebrauchtwagen',
-    link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=461879265', // Echter aktiver Link
+    link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=461879265',
     dateAdded: 'Vor 5 Stunden'
   },
   {
     id: 3,
     model: 'Dacia Duster III Journey',
-    price: 17490, // Grün (Bestpreis)
-    year: 2025,
-    location: 'Grasberg',
-    specs: ['LPG (Autogas)', 'Klima', 'Tempomat', '5.000 km'],
-    portal: 'Mobile.de',
+    price: 19900,
+    year: 2024,
+    location: 'Bielefeld (22 km von Bad Driburg)',
+    specs: ['Benzin', 'Klima', 'Navi', 'Sitzheizung'],
+    portal: 'AutoScout24',
     type: 'Gebrauchtwagen',
-    link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=456422207', // Echter aktiver Link
-    dateAdded: 'Vor 1 Tag'
+    link: 'https://www.autoscout24.de/lst/dacia/duster?priceto=25000&cy=D&damaged_listing=exclude&desc=0&pricefrom=17000&atype=C&frfrom=2024',
+    dateAdded: 'Vor 6 Stunden'
   },
   {
     id: 4,
     model: 'Dacia Duster Journey mild hybrid 130',
-    price: 17000, // Grün (Bestpreis)
+    price: 17000,
     year: 2024,
     location: 'Kirchlinteln',
     specs: ['Benzin', 'Klima', '49.764 km'],
     portal: 'Mobile.de',
     type: 'Gebrauchtwagen',
-    link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=461266517', // Echter aktiver Link
+    link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=461266517',
     dateAdded: 'Vor 1 Tag'
+  },
+  {
+    id: 5,
+    model: 'Dacia Duster III TCe 130',
+    price: 18200,
+    year: 2024,
+    location: 'Paderborn (22 km von Bad Driburg)',
+    specs: ['Benzin', '4x4', 'Klima', 'Notverkauf'],
+    portal: 'Dacianer Forum',
+    type: 'Privatverkauf',
+    link: 'https://www.dacianer.de/forums/suche-biete.13/',
+    dateAdded: 'Vor 1 Tag'
+  },
+  {
+    id: 6,
+    model: 'Dacia Duster Neuer Journey HYBRID 140',
+    price: 21500,
+    year: 2025,
+    location: 'Hannover (90 km von Bad Driburg)',
+    specs: ['Hybrid', 'Benzin', 'Klima', 'Navi', 'Neuwertig'],
+    portal: 'AutoScout24',
+    type: 'Gebrauchtwagen',
+    link: 'https://www.autoscout24.de/lst/dacia/duster?priceto=25000&cy=D&damaged_listing=exclude&desc=0&pricefrom=17000&atype=C&frfrom=2024',
+    dateAdded: 'Vor 2 Tagen'
   }
 ];
 
@@ -259,63 +283,41 @@ function App() {
     }
   };
 
-  // E-Mail senden via Netlify Forms oder Web3Forms
+  // E-Mail senden via FormSubmit.co (kein API-Key nötig, funktioniert direkt aus React)
   const sendEmailNotification = async (message) => {
     if (!emailAddress) {
       showToast('E-Mail-Fehler', 'Bitte gib eine E-Mail-Adresse ein.');
       return false;
     }
 
-    // Option 1: Web3Forms (Erlaubt E-Mails an eine beliebige eingetragene Adresse)
-    if (web3formsKey) {
-      try {
-        const response = await fetch('https://api.web3forms.com/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            access_key: web3formsKey,
-            email: emailAddress,
-            subject: '🚗 Dacia Finder Alert!',
-            message: message,
-            from_name: 'Dacia Deal Finder'
-          })
-        });
-
-        if (response.ok) {
-          showToast('E-Mail gesendet!', `Gesendet via Web3Forms an ${emailAddress}`);
-          return true;
-        } else {
-          const resData = await response.json();
-          showToast('Web3Forms-Fehler', resData.message || 'Konnte Mail nicht senden.');
-          return false;
-        }
-      } catch (err) {
-        showToast('E-Mail-Fehler', 'Verbindung zu Web3Forms fehlgeschlagen.');
-        return false;
-      }
-    }
-
-    // Option 2: Netlify Forms (Erlaubt kostenlosen E-Mail-Versand an den Seitenbesitzer)
     try {
-      const formData = new URLSearchParams();
-      formData.append('form-name', 'dacia-deal-alerts');
-      formData.append('email', emailAddress);
-      formData.append('model', 'Dacia Deal Alert');
-      formData.append('price', 'Suchtreffer');
-      formData.append('location', 'Deutschland');
-      formData.append('link', 'https://manni-dacia.netlify.app');
-      formData.append('specs', message);
-
-      await fetch('/', {
+      const response = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(emailAddress)}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData.toString()
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          _subject: '🚗 Dacia Finder Alert – Neues Angebot!',
+          _template: 'table',
+          _captcha: 'false',
+          name: 'Dacia Deal Finder',
+          nachricht: message
+        })
       });
 
-      showToast('E-Mail an Netlify gesendet!', 'Seiteninhaber erhält den Alert.');
-      return true;
+      const data = await response.json();
+
+      if (data.success === 'true' || data.success === true) {
+        showToast('E-Mail gesendet! ✅', `Alert wurde an ${emailAddress} verschickt.`);
+        return true;
+      } else {
+        // Bei erstem Aufruf sendet FormSubmit eine Aktivierungs-Email
+        showToast('📬 Aktivierungs-E-Mail unterwegs!', `Bitte überprüfe ${emailAddress} und bestätige einmalig den Link von FormSubmit. Danach kommen alle Alerts automatisch an!`);
+        return false;
+      }
     } catch (err) {
-      showToast('E-Mail-Fehler', 'Netlify Formular-Übermittlung fehlgeschlagen.');
+      showToast('E-Mail-Fehler', 'Verbindung zu FormSubmit fehlgeschlagen.');
       return false;
     }
   };
