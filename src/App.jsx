@@ -163,7 +163,7 @@ function App() {
   const [radius, setRadius] = useState('Deutschland');
   
   // Notification Configs
-  const [whatsappPhone, setWhatsappPhone] = useState('');
+  const [whatsappPhone, setWhatsappPhone] = useState('+4917641849426');
   const [whatsappApiKey, setWhatsappApiKey] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
   

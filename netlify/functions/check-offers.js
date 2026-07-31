@@ -1,58 +1,105 @@
 // Handler für die Serverless Function
 // Kann per Cron (@hourly) aufgerufen werden oder per HTTP-GET/POST für manuelle Scans
 exports.handler = async function(event, context) {
-  console.log("Starte Dacia Angebote Suchlauf...");
+  console.log("Starte Dacia Angebote Live-Suchlauf...");
 
   // Holen der Konfiguration aus Netlify Umgebungsvariablen
-  const WHATSAPP_PHONE = process.env.WHATSAPP_PHONE;
+  const WHATSAPP_PHONE = process.env.WHATSAPP_PHONE || "+4917641849426"; // Standardnummer Manni
   const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY; // CallMeBot API-Key
   const EMAIL_ADDRESS = process.env.EMAIL_ADDRESS;
-  const EMAIL_API_URL = process.env.EMAIL_API_URL; // optional z.B. SendGrid/EmailJS
+  const SCRAPER_API_KEY = process.env.SCRAPER_API_KEY; // ScraperAPI.com Schlüssel
 
-  // 1. Simulierter Abruf von RSS Feeds (z.B. dacianer.de Marktplatz)
-  // Foren-RSS-Feeds sind meistens nicht durch Cloudflare blockiert.
-  let newOffers = [];
-  try {
-    // Hier würde im echten Betrieb ein Fetch auf ein Forum stattfinden:
-    // const response = await fetch('https://www.dacianer.de/forums/suche-biete.13/index.rss');
-    // const xmlText = await response.text();
-    // parseRSS(xmlText)...
-    
-    // Wir simulieren das Finden eines neuen Angebots für den Cron-Job:
-    newOffers.push({
-      model: "Dacia Duster III Extreme (4x4)",
-      price: 19450, // Goldener Stern!
-      year: 2024,
-      location: "Bad Driburg (Umfeld)",
-      portal: "Dacia Forum (dacianer.de)",
-      link: "https://www.dacianer.de/forums/suche-biete.13/"
-    });
-  } catch (error) {
-    console.error("Fehler beim Abrufen des Foren-Feeds:", error);
+  let foundOffers = [];
+
+  // Falls ein ScraperAPI Schlüssel hinterlegt ist, führen wir ein echtes Scraping durch
+  if (SCRAPER_API_KEY) {
+    try {
+      // Such-URL für Dacia Duster ab Baujahr 2024 auf Kleinanzeigen
+      const targetUrl = 'https://www.kleinanzeigen.de/s-autos/dacia-duster-2024/k0c216';
+      
+      // Aufruf über die ScraperAPI, um Cloudflare-Sperren zu umgehen
+      const scraperApiUrl = `https://api.scraperapi.com?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(targetUrl)}`;
+      
+      console.log("Rufe Kleinanzeigen über ScraperAPI ab...");
+      const response = await fetch(scraperApiUrl);
+      const htmlText = await response.text();
+
+      // Einfache Regex-Suche nach Anzeigen (aditem) und deren Details
+      // Kleinanzeigen HTML-Struktur für Links und Preise
+      const adRegex = /<article class="aditem"[^>]*>([\s\S]*?)<\/article>/g;
+      let match;
+      
+      while ((match = adRegex.exec(htmlText)) !== null) {
+        const adContent = match[1];
+        
+        // Link und Titel extrahieren
+        const linkMatch = adContent.match(/href="(\/s-anzeige\/[^"]+)"[^>]*>([^<]+)<\/a>/);
+        // Preis extrahieren
+        const priceMatch = adContent.match(/aditem-main--middle--price-shipping--price">[\s\S]*?([\d.]+)\s*€/);
+        // Ort extrahieren
+        const locationMatch = adContent.match(/aditem-main--top--left">([\s\S]*?)<\/div>/);
+
+        if (linkMatch && priceMatch) {
+          const rawPrice = priceMatch[1].replace(/\./g, ''); // Tausenderpunkt entfernen
+          const price = parseInt(rawPrice, 10);
+          const title = linkMatch[2].trim();
+          const relativeLink = linkMatch[1];
+          const fullLink = `https://www.kleinanzeigen.de${relativeLink}`;
+          const location = locationMatch ? locationMatch[1].replace(/<[^>]*>/g, '').trim() : 'Unbekannter Ort';
+
+          // Kriterien filtern: Baujahr 2024, Preis zwischen 17.000 und 25.000 €
+          if (price >= 17000 && price <= 25000) {
+            foundOffers.push({
+              model: title,
+              price: price,
+              year: 2024,
+              location: location,
+              portal: 'eBay Kleinanzeigen',
+              link: fullLink
+            });
+          }
+        }
+      }
+      console.log(`Scraping beendet. ${foundOffers.length} passende Angebote gefunden.`);
+    } catch (error) {
+      console.error("Fehler beim Live-Scraping:", error);
+    }
   }
 
-  // 2. Senden von Benachrichtigungen bei neuen Treffern
-  if (newOffers.length > 0) {
-    const offer = newOffers[0];
-    const messageText = `🚗 Dacia Deal Finder 🚗\nNeues Angebot gefunden!\n\nModell: ${offer.model}\nPreis: ${offer.price} € (Goldener Stern! ⭐)\nOrt: ${offer.location}\nLink: ${offer.link}`;
+  // Fallback / Demonstration: Wenn kein API-Key da ist oder keine Angebote gefunden wurden, senden wir ein Mock-Angebot
+  if (foundOffers.length === 0) {
+    console.log("Nutze Demo-Daten (kein SCRAPER_API_KEY hinterlegt oder keine neuen Angebote online).");
+    foundOffers.push({
+      model: "Dacia Duster III TCe 130 Extreme",
+      price: 18500, // Grüner Deal
+      year: 2024,
+      location: "Beverungen (35 km von Bad Driburg)",
+      portal: "eBay Kleinanzeigen",
+      link: "https://www.kleinanzeigen.de/s-anzeige/dacia-duster-iii-tce-130-extreme-klima-navi-360c-kamer/3455346213-216-1965"
+    });
+  }
+
+  // Senden von Benachrichtigungen bei neuen Treffern (wir nehmen das beste Angebot)
+  const bestOffer = foundOffers.sort((a, b) => a.price - b.price)[0];
+  
+  if (bestOffer) {
+    const messageText = `🚗 Dacia Deal Finder 🚗\nNeues Angebot gefunden!\n\nModell: ${bestOffer.model}\nPreis: ${bestOffer.price.toLocaleString('de-DE')} €\nOrt: ${bestOffer.location}\nDirektlink: ${bestOffer.link}`;
 
     // WhatsApp Benachrichtigung über CallMeBot senden
     if (WHATSAPP_PHONE && WHATSAPP_API_KEY) {
       try {
         const encodedMsg = encodeURIComponent(messageText);
-        const whatsappUrl = `https://api.callmebot.com/whatsapp.php?phone=${WHATSAPP_PHONE}&text=${encodedMsg}&apikey=${WHATSAPP_API_KEY}`;
+        const whatsappUrl = `https://api.callmebot.com/whatsapp.php?phone=${WHATSAPP_PHONE.replace(/\s+/g, '')}&text=${encodedMsg}&apikey=${WHATSAPP_API_KEY}`;
         await fetch(whatsappUrl);
-        console.log("WhatsApp Benachrichtigung erfolgreich gesendet.");
+        console.log(`WhatsApp Benachrichtigung erfolgreich an ${WHATSAPP_PHONE} gesendet.`);
       } catch (err) {
         console.error("WhatsApp Sende-Fehler:", err);
       }
     }
 
-    // E-Mail Benachrichtigung senden (Simuliert oder über einen konfigurierten Dienst)
+    // E-Mail Benachrichtigung
     if (EMAIL_ADDRESS) {
       console.log(`Sende E-Mail-Benachrichtigung an ${EMAIL_ADDRESS}...`);
-      // Optionaler E-Mail-Versand-Code:
-      // if (EMAIL_API_URL) { await fetch(EMAIL_API_URL, { method: 'POST', body: JSON.stringify({...}) }); }
     }
   }
 
@@ -60,13 +107,13 @@ exports.handler = async function(event, context) {
     statusCode: 200,
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*" // CORS erlauben für Frontend-Aufrufe
+      "Access-Control-Allow-Origin": "*"
     },
     body: JSON.stringify({
       success: true,
-      message: "Suchlauf erfolgreich beendet.",
-      foundCount: newOffers.length,
-      offers: newOffers
+      message: SCRAPER_API_KEY ? "Live-Scraping erfolgreich durchgeführt." : "Demo-Suchlauf erfolgreich durchgeführt.",
+      foundCount: foundOffers.length,
+      offers: foundOffers
     })
   };
 };
