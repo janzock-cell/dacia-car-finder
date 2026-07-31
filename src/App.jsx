@@ -3,21 +3,26 @@ import React, { useState } from 'react';
 // Funktion zur dynamischen Generierung von präzisen Direkt-Suchlinks zu den Angeboten
 const getDirectSearchLink = (portal, modelName, specs = []) => {
   const is4x4 = specs.includes('4x4') || specs.some(s => s.toLowerCase().includes('4x4'));
-  const keywords = modelName.replace('Dacia ', '');
-  const encodedKeywords = encodeURIComponent(keywords + (is4x4 ? ' 4x4' : ''));
+  const keywords = modelName.replace('Dacia ', '').replace(' (Allgemein)', '');
+  const queryText = `${keywords}${is4x4 ? ' 4x4' : ''}`;
+  const encodedQuery = encodeURIComponent(queryText);
   
   if (portal === 'Mobile.de') {
-    return `https://www.mobile.de/de/lst/dacia/duster/vhc:car,frn:2024,prn:17000,prx:25000?kw=${encodedKeywords}`;
+    // Präziser Mobile.de Suchlink mit vordefinierten Filtern für Dacia Duster ab 2024 im Preisbereich 17.000 - 25.000 €
+    return `https://suchen.mobile.de/fahrzeuge/search.html?dam=false&isSearchRequest=true&ms=6600;2;;;&sfmr=false&vc=Car&minFirstRegistrationDate=2024-01-01&minPrice=17000&maxPrice=25000&q=${encodedQuery}`;
   } else if (portal === 'AutoScout24') {
-    return `https://www.autoscout24.de/lst/dacia/duster?atype=C&cy=D&damaged_listing=exclude&desc=0&frfrom=2024&pricefrom=17000&priceto=25000&q=${encodedKeywords}`;
+    // AutoScout24 Suchlink unter Verwendung des Freitextfilters 'q' und der Modellfilter
+    return `https://www.autoscout24.de/lst/dacia/duster?atype=C&cy=D&damaged_listing=exclude&desc=0&frfrom=2024&pricefrom=17000&priceto=25000&q=${encodedQuery}`;
   } else if (portal === 'eBay Kleinanzeigen' || portal === 'Kleinanzeigen') {
-    return `https://www.kleinanzeigen.de/s-autos/deutschland/${encodeURIComponent('dacia duster 2024 ' + keywords)}/k0c216+autos.anzeige_s:autos`;
+    // Kleinanzeigen Suchlink im Automarkt mit Filtern
+    return `https://www.kleinanzeigen.de/s-autos/dacia-duster/k0c216?keywords=${encodeURIComponent('dacia duster ' + queryText)}`;
   } else if (portal === 'Zoll-Auktion') {
-    return `https://www.zoll-auktion.de/auktion/suchergebnis.php?suche=${encodeURIComponent('Dacia ' + keywords)}`;
+    return `https://www.zoll-auktion.de/auktion/suchergebnis.php?suche=${encodeURIComponent('Dacia Duster ' + queryText)}`;
   } else if (portal === 'Dacia Forum' || portal === 'Dacia Forum Marktplatz') {
-    return `https://www.dacianer.de/search/2221666/?q=${encodeURIComponent(keywords)}&o=date`;
+    // Valider Foren-Suchlink auf dacianer.de (XenForo-Standard-Such-URL)
+    return `https://www.dacianer.de/search/search?keywords=${encodeURIComponent('Duster ' + queryText)}`;
   } else if (portal === 'Reimport Portal') {
-    return `https://www.reimport-dacia.de/suche?q=${encodedKeywords}`;
+    return `https://www.reimport-dacia.de/suche?q=${encodedQuery}`;
   }
   return '#';
 };
@@ -33,7 +38,7 @@ const INITIAL_OFFERS = [
     specs: ['4x4', 'Gas/Benzin (LPG)', 'Bett-Umbau'],
     portal: 'AutoScout24',
     type: 'Gebrauchtwagen',
-    link: 'https://www.autoscout24.de/angebote/dacia-duster-tce-130-journey-4x4-klima-navi-benzin-grau-365287f3-b77a-4c28-9c17-df2e858dbdb9',
+    link: '', // Dynamischer Suchlink wird verwendet
     dateAdded: 'Vor 2 Stunden'
   },
   {
@@ -57,7 +62,7 @@ const INITIAL_OFFERS = [
     specs: ['4x4', 'Benzin', 'Hybrid'],
     portal: 'Mobile.de',
     type: 'Neuwagen',
-    link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=391283724',
+    link: '', // Dynamischer Suchlink wird verwendet
     dateAdded: 'Vor 1 Tag'
   },
   {
@@ -69,7 +74,7 @@ const INITIAL_OFFERS = [
     specs: ['Gas/Benzin (LPG)', 'Essential Kit'],
     portal: 'Mobile.de',
     type: 'Reimport',
-    link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=392817293',
+    link: '', // Dynamischer Suchlink wird verwendet
     dateAdded: 'Vor 1 Tag'
   },
   {
@@ -81,7 +86,7 @@ const INITIAL_OFFERS = [
     specs: ['Hybrid', 'Gas/electro/Benzin', 'Bett-Umbau'],
     portal: 'Dacia Forum Marktplatz',
     type: 'Neuwagen',
-    link: 'https://www.dacianer.de/forums/suche-biete.13/',
+    link: '', // Dynamischer Suchlink wird verwendet
     dateAdded: 'Vor 2 Tagen'
   },
   {
@@ -93,7 +98,7 @@ const INITIAL_OFFERS = [
     specs: ['Benzin', 'Gebraucht-Garantie'],
     portal: 'AutoScout24',
     type: 'Gebrauchtwagen',
-    link: 'https://www.autoscout24.de/angebote/dacia-duster-tce-130-extreme-4x2-benzin-rot-19c28e83-7728-48bc-b283-e18e8d8de9b2',
+    link: '', // Dynamischer Suchlink wird verwendet
     dateAdded: 'Vor 3 Tagen'
   },
   {
