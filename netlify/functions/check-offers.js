@@ -110,9 +110,37 @@ exports.handler = async function(event, context) {
       }
     }
 
-    // E-Mail Benachrichtigung
-    if (EMAIL_ADDRESS) {
-      console.log(`Sende E-Mail-Benachrichtigung an ${EMAIL_ADDRESS}...`);
+    // E-Mail Benachrichtigung über SMTP senden
+    const SMTP_USER = process.env.SMTP_USER;
+    const SMTP_PASS = process.env.SMTP_PASS;
+    const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
+
+    if (EMAIL_ADDRESS && SMTP_USER && SMTP_PASS) {
+      try {
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+          host: SMTP_HOST,
+          port: SMTP_PORT,
+          secure: SMTP_PORT === 465,
+          auth: {
+            user: SMTP_USER,
+            pass: SMTP_PASS
+          }
+        });
+
+        await transporter.sendMail({
+          from: `"Dacia Deal Finder" <${SMTP_USER}>`,
+          to: EMAIL_ADDRESS,
+          subject: '🚗 Neuer Dacia Deal gefunden!',
+          text: messageText
+        });
+        console.log(`E-Mail-Benachrichtigung erfolgreich an ${EMAIL_ADDRESS} gesendet.`);
+      } catch (err) {
+        console.error("E-Mail Sende-Fehler:", err);
+      }
+    } else if (EMAIL_ADDRESS) {
+      console.log(`E-Mail an ${EMAIL_ADDRESS} nicht gesendet: SMTP_USER oder SMTP_PASS fehlen in den Umgebungsvariablen.`);
     }
   }
 

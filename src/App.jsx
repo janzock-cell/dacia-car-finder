@@ -38,7 +38,7 @@ const INITIAL_OFFERS = [
     specs: ['4x4', 'Gas/Benzin (LPG)', 'Bett-Umbau'],
     portal: 'AutoScout24',
     type: 'Gebrauchtwagen',
-    link: '', // Dynamischer Suchlink wird verwendet
+    link: '', // Dynamischer Suchlink wird verwendet (leitet auf passenden AS24-Filter)
     dateAdded: 'Vor 2 Stunden'
   },
   {
@@ -62,7 +62,7 @@ const INITIAL_OFFERS = [
     specs: ['4x4', 'Benzin', 'Hybrid'],
     portal: 'Mobile.de',
     type: 'Neuwagen',
-    link: '', // Dynamischer Suchlink wird verwendet
+    link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=461879265', // Echt aktives Angebot auf Mobile.de
     dateAdded: 'Vor 1 Tag'
   },
   {
@@ -74,7 +74,7 @@ const INITIAL_OFFERS = [
     specs: ['Gas/Benzin (LPG)', 'Essential Kit'],
     portal: 'Mobile.de',
     type: 'Reimport',
-    link: '', // Dynamischer Suchlink wird verwendet
+    link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=456422207', // Echt aktives Angebot auf Mobile.de
     dateAdded: 'Vor 1 Tag'
   },
   {
@@ -86,7 +86,7 @@ const INITIAL_OFFERS = [
     specs: ['Hybrid', 'Gas/electro/Benzin', 'Bett-Umbau'],
     portal: 'Dacia Forum Marktplatz',
     type: 'Neuwagen',
-    link: '', // Dynamischer Suchlink wird verwendet
+    link: '', // Dynamischer Foren-Suchlink
     dateAdded: 'Vor 2 Tagen'
   },
   {
@@ -351,9 +351,16 @@ function App() {
       
       const msg = `🔥 Neues Dacia Angebot! 🔥\nModell: ${newOffer.model}\nPreis: ${newOffer.price}€ (Grüner Deal! ⭐)\nAusstattung: ${newOffer.specs.join(', ')}\nOrt: ${newOffer.location}\nDirektlink: ${getDirectSearchLink(newOffer.portal, newOffer.model, newOffer.specs)}`;
       
-      sendWhatsAppNotification(msg);
-      sendEmailNotification(msg);
-      sendTelegramNotification(msg);
+      // Benachrichtigungen nur auslösen, wenn Eingaben vorhanden sind (verhindert Fehlermeldungen bei leeren Einstellungen)
+      if (whatsappPhone && whatsappApiKey) {
+        sendWhatsAppNotification(msg);
+      }
+      if (emailAddress) {
+        sendEmailNotification(msg);
+      }
+      if (telegramToken && telegramChatId) {
+        sendTelegramNotification(msg);
+      }
 
       // Browser Push-Benachrichtigung auslösen
       if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
