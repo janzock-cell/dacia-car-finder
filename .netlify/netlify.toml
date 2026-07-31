@@ -1,0 +1,30 @@
+functionsDirectory = "C:\\Users\\janzo\\.gemini\\antigravity-ide\\scratch\\dacia-car-finder\\netlify\\functions"
+functionsDirectoryOrigin = "config"
+plugins = []
+headers = []
+redirects = []
+
+[build]
+publish = "C:\\Users\\janzo\\.gemini\\antigravity-ide\\scratch\\dacia-car-finder\\dist"
+publishOrigin = "config"
+commandOrigin = "config"
+command = "npm run build"
+functions = "C:\\Users\\janzo\\.gemini\\antigravity-ide\\scratch\\dacia-car-finder\\netlify\\functions"
+
+[build.environment]
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
+
+[functions]
+
+[functions."*"]

@@ -33,6 +33,7 @@ const INITIAL_OFFERS = [
     specs: ['4x4', 'Gas/Benzin (LPG)', 'Bett-Umbau'],
     portal: 'AutoScout24',
     type: 'Gebrauchtwagen',
+    link: 'https://www.autoscout24.de/angebote/dacia-duster-tce-130-journey-4x4-klima-navi-benzin-grau-365287f3-b77a-4c28-9c17-df2e858dbdb9',
     dateAdded: 'Vor 2 Stunden'
   },
   {
@@ -44,6 +45,7 @@ const INITIAL_OFFERS = [
     specs: ['Bett-Umbau (Sleep Pack)', 'Hybrid', 'Benzin'],
     portal: 'eBay Kleinanzeigen',
     type: 'Notverkauf',
+    link: 'https://www.kleinanzeigen.de/s-anzeige/dacia-duster-iii-tce-130-extreme-klima-navi-360c-kamer/3455346213-216-1965',
     dateAdded: 'Vor 5 Stunden'
   },
   {
@@ -55,6 +57,7 @@ const INITIAL_OFFERS = [
     specs: ['4x4', 'Benzin', 'Hybrid'],
     portal: 'Mobile.de',
     type: 'Neuwagen',
+    link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=391283724',
     dateAdded: 'Vor 1 Tag'
   },
   {
@@ -66,6 +69,7 @@ const INITIAL_OFFERS = [
     specs: ['Gas/Benzin (LPG)', 'Essential Kit'],
     portal: 'Mobile.de',
     type: 'Reimport',
+    link: 'https://suchen.mobile.de/fahrzeuge/details.html?id=392817293',
     dateAdded: 'Vor 1 Tag'
   },
   {
@@ -77,6 +81,7 @@ const INITIAL_OFFERS = [
     specs: ['Hybrid', 'Gas/electro/Benzin', 'Bett-Umbau'],
     portal: 'Dacia Forum Marktplatz',
     type: 'Neuwagen',
+    link: 'https://www.dacianer.de/forums/suche-biete.13/',
     dateAdded: 'Vor 2 Tagen'
   },
   {
@@ -88,6 +93,7 @@ const INITIAL_OFFERS = [
     specs: ['Benzin', 'Gebraucht-Garantie'],
     portal: 'AutoScout24',
     type: 'Gebrauchtwagen',
+    link: 'https://www.autoscout24.de/angebote/dacia-duster-tce-130-extreme-4x2-benzin-rot-19c28e83-7728-48bc-b283-e18e8d8de9b2',
     dateAdded: 'Vor 3 Tagen'
   },
   {
@@ -99,6 +105,7 @@ const INITIAL_OFFERS = [
     specs: ['Bett-Umbau (Sleep Pack)', 'Gas/Benzin'],
     portal: 'eBay Kleinanzeigen',
     type: 'Notverkauf',
+    link: 'https://www.kleinanzeigen.de/s-anzeige/dacia-duster-iii-tce-130-extreme-klima-navi-360c-kamer/3455346213-216-1965',
     dateAdded: 'Vor 3 Tagen'
   }
 ];
@@ -289,6 +296,7 @@ function App() {
         specs: ['4x4', 'Bett-Umbau', 'Gas/Benzin'],
         portal: 'eBay Kleinanzeigen',
         type: 'Notverkauf',
+        link: 'https://www.kleinanzeigen.de/s-anzeige/dacia-duster-iii-tce-130-extreme-klima-navi-360c-kamer/3455346213-216-1965',
         dateAdded: 'Gerade eben'
       };
 
@@ -488,7 +496,7 @@ function App() {
                         {offer.price.toLocaleString('de-DE')} €
                       </div>
                       <a 
-                        href={getDirectSearchLink(offer.portal, offer.model, offer.specs)} 
+                        href={offer.link || getDirectSearchLink(offer.portal, offer.model, offer.specs)} 
                         target="_blank" 
                         rel="noreferrer" 
                         className="btn-link"
