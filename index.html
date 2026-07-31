@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Dacia Deal Finder - Finde die besten Neu- und Gebrauchtwagen-Angebote für Dacia Duster, Sleep Camp und Adventure Modelle ab Baujahr 2024 im Raum Deutschland und Bad Driburg." />
+    <title>Dacia Deal Finder | Neu- & Gebrauchtwagen ab 2024</title>
+    
+    <!-- PWA Web Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0d1117" />
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Service Worker registriert: ', reg.scope))
+            .catch(err => console.error('Service Worker Fehler: ', err));
+        });
+      }
+    </script>
+  </body>
+</html>
