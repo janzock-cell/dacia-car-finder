@@ -8,6 +8,8 @@ exports.handler = async function(event, context) {
   const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY; // CallMeBot API-Key
   const EMAIL_ADDRESS = process.env.EMAIL_ADDRESS;
   const SCRAPER_API_KEY = process.env.SCRAPER_API_KEY; // ScraperAPI.com Schlüssel
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
   let foundOffers = [];
 
@@ -94,6 +96,17 @@ exports.handler = async function(event, context) {
         console.log(`WhatsApp Benachrichtigung erfolgreich an ${WHATSAPP_PHONE} gesendet.`);
       } catch (err) {
         console.error("WhatsApp Sende-Fehler:", err);
+      }
+    }
+
+    // Telegram Benachrichtigung senden
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+      try {
+        const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(messageText)}`;
+        await fetch(telegramUrl);
+        console.log("Telegram Benachrichtigung erfolgreich gesendet.");
+      } catch (err) {
+        console.error("Telegram Sende-Fehler:", err);
       }
     }
 

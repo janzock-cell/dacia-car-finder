@@ -166,6 +166,8 @@ function App() {
   const [whatsappPhone, setWhatsappPhone] = useState('+4917641849426');
   const [whatsappApiKey, setWhatsappApiKey] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
+  const [telegramToken, setTelegramToken] = useState('');
+  const [telegramChatId, setTelegramChatId] = useState('');
   
   const [offers, setOffers] = useState(INITIAL_OFFERS);
   const [toast, setToast] = useState(null);
@@ -280,6 +282,23 @@ function App() {
     return true;
   };
 
+  // Telegram Benachrichtigung senden
+  const sendTelegramNotification = async (message) => {
+    if (!telegramToken || !telegramChatId) {
+      showToast('Telegram Fehler', 'Bitte gib Token und Chat-ID ein.');
+      return false;
+    }
+    try {
+      const url = `https://api.telegram.org/bot${telegramToken}/sendMessage?chat_id=${telegramChatId}&text=${encodeURIComponent(message)}`;
+      await fetch(url);
+      showToast('Telegram gesendet!', 'Die Benachrichtigung wurde via Telegram verschickt.');
+      return true;
+    } catch (err) {
+      showToast('Telegram API Fehler', 'Konnte Verbindung nicht herstellen.');
+      return false;
+    }
+  };
+
   // Simulation für neue Angebote Scannen
   const handleScan = () => {
     setIsScanning(true);
@@ -308,6 +327,7 @@ function App() {
       
       sendWhatsAppNotification(msg);
       sendEmailNotification(msg);
+      sendTelegramNotification(msg);
     }, 3000);
   };
 
@@ -579,6 +599,9 @@ function App() {
                     value={whatsappApiKey}
                     onChange={(e) => setWhatsappApiKey(e.target.value)}
                   />
+                  <div style={{ fontSize: '0.75rem', color: 'var(--accent-red)', marginTop: '8px' }}>
+                    ⚠️ CallMeBot ist aktuell voll und vergibt temporär keine neuen Keys! Bitte nutze Telegram als Alternative.
+                  </div>
                   <button 
                     type="button" 
                     className="btn-secondary" 
@@ -586,6 +609,40 @@ function App() {
                     onClick={() => sendWhatsAppNotification("Dacia Finder Test: Benachrichtigungen sind aktiv! 🚗💨")}
                   >
                     WhatsApp Testen
+                  </button>
+                </div>
+
+                {/* Telegram */}
+                <div className="notification-input-group">
+                  <label style={{ fontWeight: '600', fontSize: '0.9rem' }}>Telegram Bot Token</label>
+                  <input
+                    type="password"
+                    className="input-field"
+                    placeholder="123456789:ABCdefGhI..."
+                    value={telegramToken}
+                    onChange={(e) => setTelegramToken(e.target.value)}
+                  />
+                  <label style={{ fontWeight: '600', fontSize: '0.9rem', marginTop: '10px' }}>
+                    Telegram Chat-ID
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="987654321"
+                    value={telegramChatId}
+                    onChange={(e) => setTelegramChatId(e.target.value)}
+                  />
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                    1. Bot bei <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" style={{ color: 'var(--brand-primary)' }}>@BotFather</a> anlegen. <br/>
+                    2. Chat-ID von <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" style={{ color: 'var(--brand-primary)' }}>@userinfobot</a> holen.
+                  </div>
+                  <button 
+                    type="button" 
+                    className="btn-secondary" 
+                    style={{ marginTop: '10px' }}
+                    onClick={() => sendTelegramNotification("Dacia Finder Test: Telegram ist aktiv! 🚗💨")}
+                  >
+                    Telegram Testen
                   </button>
                 </div>
 
@@ -605,7 +662,7 @@ function App() {
                   <button 
                     type="button" 
                     className="btn-secondary" 
-                    style={{ marginTop: '39px' }}
+                    style={{ marginTop: '75px' }}
                     onClick={() => sendEmailNotification("Dacia Finder Test: Benachrichtigungen per E-Mail aktiv!")}
                   >
                     E-Mail Testen
