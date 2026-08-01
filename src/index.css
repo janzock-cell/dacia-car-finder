@@ -152,6 +152,10 @@ body {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
+  .sidebar {
+    position: static;
+    top: auto;
+  }
   .hero-header {
     height: auto;
     min-height: 300px;
