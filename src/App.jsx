@@ -36,6 +36,7 @@ const INITIAL_OFFERS = [
     model: 'Dacia Duster III TCe 130 Extreme',
     price: 18650,
     year: 2024,
+    km: 12000,
     location: 'Mönchengladbach (40 km von Bad Driburg)',
     specs: ['4x4', 'Bett-Umbau', 'Gas/Benzin', 'Extreme Pack'],
     portal: 'eBay Kleinanzeigen',
@@ -48,6 +49,7 @@ const INITIAL_OFFERS = [
     model: 'Dacia Duster ECO-G 100 Essential',
     price: 17490,
     year: 2025,
+    km: 16922,
     location: 'Brandenburg a.d. Havel',
     specs: ['Gas/Benzin', 'Klima', 'Navi', '16.922 km'],
     portal: 'Mobile.de',
@@ -60,6 +62,7 @@ const INITIAL_OFFERS = [
     model: 'Dacia Duster III Journey',
     price: 19900,
     year: 2024,
+    km: 8500,
     location: 'Bielefeld (22 km von Bad Driburg)',
     specs: ['Benzin', 'Klima', 'Navi', 'Sitzheizung'],
     portal: 'AutoScout24',
@@ -72,6 +75,7 @@ const INITIAL_OFFERS = [
     model: 'Dacia Duster Journey mild hybrid 130',
     price: 17000,
     year: 2024,
+    km: 49764,
     location: 'Kirchlinteln',
     specs: ['Benzin', 'Klima', '49.764 km'],
     portal: 'Mobile.de',
@@ -84,6 +88,7 @@ const INITIAL_OFFERS = [
     model: 'Dacia Duster III TCe 130',
     price: 18200,
     year: 2024,
+    km: 22000,
     location: 'Paderborn (22 km von Bad Driburg)',
     specs: ['Benzin', '4x4', 'Klima', 'Notverkauf'],
     portal: 'Dacianer Forum',
@@ -96,6 +101,7 @@ const INITIAL_OFFERS = [
     model: 'Dacia Duster Neuer Journey HYBRID 140',
     price: 21500,
     year: 2025,
+    km: 3200,
     location: 'Hannover (90 km von Bad Driburg)',
     specs: ['Hybrid', 'Benzin', 'Klima', 'Navi', 'Neuwertig'],
     portal: 'AutoScout24',
@@ -184,6 +190,41 @@ function App() {
   const [toast, setToast] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
 
+  // Neue Features: Favoriten, Sortierung, KM-Filter, Jahr-Filter, Vergleich
+  const [favorites, setFavorites] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('dacia_favorites') || '[]'); } catch { return []; }
+  });
+  const [sortBy, setSortBy] = useState('date'); // 'date' | 'price_asc' | 'price_desc'
+  const [maxKm, setMaxKm] = useState(200000);
+  const [yearFrom, setYearFrom] = useState(2024);
+  const [compareIds, setCompareIds] = useState([]);
+  const [showCompare, setShowCompare] = useState(false);
+
+  const toggleFavorite = (id) => {
+    setFavorites(prev => {
+      const next = prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id];
+      localStorage.setItem('dacia_favorites', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const toggleCompare = (id) => {
+    setCompareIds(prev => {
+      if (prev.includes(id)) return prev.filter(c => c !== id);
+      if (prev.length >= 3) { showToast('Vergleich voll', 'Maximal 3 Angebote vergleichen. Bitte einen entfernen.'); return prev; }
+      return [...prev, id];
+    });
+  };
+
+  const shareOffer = (offer) => {
+    const text = `🚗 ${offer.model}\n📍 ${offer.location} | Bj. ${offer.year}\n💶 ${offer.price.toLocaleString('de-DE')} €\n🔗 ${offer.link}`;
+    if (navigator.share) {
+      navigator.share({ title: offer.model, text, url: offer.link });
+    } else {
+      navigator.clipboard.writeText(text).then(() => showToast('📋 Kopiert!', 'Angebot wurde in die Zwischenablage kopiert.'));
+    }
+  };
+
   // Preis-Farbbewertung gemäß korrigiertem Preiskonzept
   const getPriceClassAndIcon = (price) => {
     if (price >= 17000 && price <= 19500) {
@@ -233,51 +274,66 @@ function App() {
     }));
   };
 
-  // Filter-Logik mit intelligenter Synonym-Erkennung für Ausstattungs-Checkboxes
-  const filteredOffers = offers.filter(offer => {
-    // Freitextsuche
-    if (searchText.trim()) {
-      const q = searchText.toLowerCase();
-      const inModel = offer.model.toLowerCase().includes(q);
-      const inLocation = offer.location.toLowerCase().includes(q);
-      const inSpecs = offer.specs.some(s => s.toLowerCase().includes(q));
-      const inPortal = offer.portal.toLowerCase().includes(q);
-      if (!inModel && !inLocation && !inSpecs && !inPortal) return false;
-    }
+  // Filter-Logik mit intelligenter Synonym-Erkennung + KM + Jahr
+  const filteredOffers = (() => {
+    let result = offers.filter(offer => {
+      // Freitextsuche
+      if (searchText.trim()) {
+        const q = searchText.toLowerCase();
+        const inModel = offer.model.toLowerCase().includes(q);
+        const inLocation = offer.location.toLowerCase().includes(q);
+        const inSpecs = offer.specs.some(s => s.toLowerCase().includes(q));
+        const inPortal = offer.portal.toLowerCase().includes(q);
+        if (!inModel && !inLocation && !inSpecs && !inPortal) return false;
+      }
 
-    // Modell-Match
-    const modelMatch = Object.keys(selectedModels).some(modelKey => {
-      if (!selectedModels[modelKey]) return false;
-      const cleanKey = modelKey.replace('Dacia ', '').replace(' (Allgemein)', '').toLowerCase();
-      return offer.model.toLowerCase().includes(cleanKey);
-    });
+      // KM-Filter
+      if (offer.km !== undefined && offer.km > maxKm) return false;
 
-    // Ausstattung-Match mit Synonymen
-    const specMatch = Object.keys(selectedSpecs).some(specKey => {
-      if (!selectedSpecs[specKey]) return false;
-      return offer.specs.some(s => {
-        const specLower = s.toLowerCase();
-        const keyLower = specKey.toLowerCase();
-        if (keyLower === '4x4' && specLower.includes('4x4')) return true;
-        if (keyLower === 'bett-umbau' && (specLower.includes('bett') || specLower.includes('sleep') || specLower.includes('camp'))) return true;
-        if (keyLower === 'gas/benzin' && (specLower.includes('gas') || specLower.includes('lpg') || specLower.includes('eco-g') || specLower.includes('autogas'))) return true;
-        if (keyLower === 'benzin' && (specLower.includes('benzin') || specLower.includes('tce') || specLower.includes('hybrid'))) return true;
-        if (keyLower === 'hybrid' && specLower.includes('hybrid')) return true;
-        if (keyLower === 'gas/electro/benzin' && (specLower.includes('hybrid') || specLower.includes('electro') || specLower.includes('elec'))) return true;
-        if (keyLower === 'navi / navigation' && (specLower.includes('navi') || specLower.includes('navigation'))) return true;
-        if (keyLower === 'sitzheizung' && specLower.includes('sitz')) return true;
-        if (keyLower === 'panoramadach' && (specLower.includes('panorama') || specLower.includes('glasdach'))) return true;
-        if (keyLower === 'anhängerkupplung (ahk)' && (specLower.includes('ahk') || specLower.includes('anhänger'))) return true;
-        if (keyLower === '360° kamera' && (specLower.includes('360') || specLower.includes('kamera') || specLower.includes('cam'))) return true;
-        if (keyLower === 'tempomat / abstandstempomat' && (specLower.includes('tempo') || specLower.includes('acc') || specLower.includes('abstand'))) return true;
-        if (keyLower === 'elektrische heckklappe' && (specLower.includes('heckklappe') || specLower.includes('electric'))) return true;
-        if (keyLower === 'notverkauf / schnäppchen' && (specLower.includes('notverkauf') || specLower.includes('schnäppchen') || specLower.includes('privat'))) return true;
-        return specLower.includes(keyLower);
+      // Baujahr-Filter
+      if (offer.year < yearFrom) return false;
+
+      // Modell-Match
+      const modelMatch = Object.keys(selectedModels).some(modelKey => {
+        if (!selectedModels[modelKey]) return false;
+        const cleanKey = modelKey.replace('Dacia ', '').replace(' (Allgemein)', '').toLowerCase();
+        return offer.model.toLowerCase().includes(cleanKey);
       });
+
+      // Ausstattung-Match mit Synonymen
+      const specMatch = Object.keys(selectedSpecs).some(specKey => {
+        if (!selectedSpecs[specKey]) return false;
+        return offer.specs.some(s => {
+          const specLower = s.toLowerCase();
+          const keyLower = specKey.toLowerCase();
+          if (keyLower === '4x4' && specLower.includes('4x4')) return true;
+          if (keyLower === 'bett-umbau' && (specLower.includes('bett') || specLower.includes('sleep') || specLower.includes('camp'))) return true;
+          if (keyLower === 'gas/benzin' && (specLower.includes('gas') || specLower.includes('lpg') || specLower.includes('eco-g') || specLower.includes('autogas'))) return true;
+          if (keyLower === 'benzin' && (specLower.includes('benzin') || specLower.includes('tce') || specLower.includes('hybrid'))) return true;
+          if (keyLower === 'hybrid' && specLower.includes('hybrid')) return true;
+          if (keyLower === 'gas/electro/benzin' && (specLower.includes('hybrid') || specLower.includes('electro') || specLower.includes('elec'))) return true;
+          if (keyLower === 'navi / navigation' && (specLower.includes('navi') || specLower.includes('navigation'))) return true;
+          if (keyLower === 'sitzheizung' && specLower.includes('sitz')) return true;
+          if (keyLower === 'panoramadach' && (specLower.includes('panorama') || specLower.includes('glasdach'))) return true;
+          if (keyLower === 'anhängerkupplung (ahk)' && (specLower.includes('ahk') || specLower.includes('anhänger'))) return true;
+          if (keyLower === '360° kamera' && (specLower.includes('360') || specLower.includes('kamera') || specLower.includes('cam'))) return true;
+          if (keyLower === 'tempomat / abstandstempomat' && (specLower.includes('tempo') || specLower.includes('acc') || specLower.includes('abstand'))) return true;
+          if (keyLower === 'elektrische heckklappe' && (specLower.includes('heckklappe') || specLower.includes('electric'))) return true;
+          if (keyLower === 'notverkauf / schnäppchen' && (specLower.includes('notverkauf') || specLower.includes('schnäppchen') || specLower.includes('privat'))) return true;
+          return specLower.includes(keyLower);
+        });
+      });
+
+      return modelMatch && specMatch;
     });
 
-    return modelMatch && specMatch;
-  });
+    // Sortierung
+    if (sortBy === 'price_asc') result.sort((a, b) => a.price - b.price);
+    else if (sortBy === 'price_desc') result.sort((a, b) => b.price - a.price);
+    // 'date' = Reihenfolge wie eingetragen (neueste zuerst = Standard)
+
+    return result;
+  })();
 
   // Toast Helfer
   const showToast = (title, desc) => {
@@ -463,6 +519,65 @@ function App() {
         </div>
       )}
 
+      {/* Vergleichs-Modal */}
+      {showCompare && (
+        <div onClick={() => setShowCompare(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', borderRadius: '16px', padding: '28px', maxWidth: '900px', width: '100%', maxHeight: '85vh', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 700 }}>⚖️ Angebotsvergleich</h2>
+              <button onClick={() => setShowCompare(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.4rem' }}>✕</button>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    <th style={{ textAlign: 'left', padding: '8px', color: 'var(--text-secondary)', fontWeight: 500 }}>Merkmal</th>
+                    {compareIds.map(cid => {
+                      const o = offers.find(x => x.id === cid);
+                      return o ? <th key={cid} style={{ textAlign: 'left', padding: '8px', color: 'var(--brand-primary)', fontWeight: 600 }}>{o.model}</th> : null;
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { label: 'Preis', key: o => `${o.price.toLocaleString('de-DE')} €` },
+                    { label: 'Baujahr', key: o => o.year },
+                    { label: 'Kilometerstand', key: o => o.km ? `${o.km.toLocaleString('de-DE')} km` : '–' },
+                    { label: 'Standort', key: o => o.location },
+                    { label: 'Portal', key: o => o.portal },
+                    { label: 'Typ', key: o => o.type },
+                    { label: 'Ausstattung', key: o => o.specs.join(', ') },
+                    { label: 'Eingestellt', key: o => o.dateAdded },
+                  ].map(row => (
+                    <tr key={row.label} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <td style={{ padding: '10px 8px', color: 'var(--text-secondary)', fontWeight: 500 }}>{row.label}</td>
+                      {compareIds.map(cid => {
+                        const o = offers.find(x => x.id === cid);
+                        return o ? <td key={cid} style={{ padding: '10px 8px' }}>{row.key(o)}</td> : null;
+                      })}
+                    </tr>
+                  ))}
+                  <tr>
+                    <td style={{ padding: '10px 8px' }}></td>
+                    {compareIds.map(cid => {
+                      const o = offers.find(x => x.id === cid);
+                      return o ? (
+                        <td key={cid} style={{ padding: '10px 8px' }}>
+                          <a href={cleanLink(o.link)} target="_blank" rel="noreferrer" className="btn-link" style={{ fontSize: '0.8rem' }}>Zum Angebot ↗</a>
+                        </td>
+                      ) : null;
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <button onClick={() => { setCompareIds([]); setShowCompare(false); }} style={{ marginTop: '16px', background: 'none', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', padding: '8px 16px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem' }}>
+              Vergleich leeren
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Hero Header */}
       <header className="hero-header">
         <div className="hero-bg" style={{ backgroundImage: `url('/dacia_duster_adventure.png')` }}></div>
@@ -580,6 +695,36 @@ function App() {
                 </div>
               </div>
             </div>
+
+            <div className="filter-group">
+              <div className="filter-title">Max. Kilometerstand</div>
+              <input
+                type="range"
+                min={0} max={200000} step={5000}
+                value={maxKm}
+                onChange={e => setMaxKm(Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--brand-primary)' }}
+              />
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                <span>0 km</span>
+                <span style={{ color: 'var(--accent-green)', fontWeight: 600 }}>{maxKm === 200000 ? 'Alle' : `bis ${maxKm.toLocaleString('de-DE')} km`}</span>
+                <span>200.000 km</span>
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <div className="filter-title">Baujahr ab</div>
+              <select
+                value={yearFrom}
+                onChange={e => setYearFrom(Number(e.target.value))}
+                className="input-field"
+                style={{ width: '100%' }}
+              >
+                {[2020, 2021, 2022, 2023, 2024, 2025].map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
             
             <button 
               className="btn-primary" 
@@ -612,18 +757,51 @@ function App() {
         <main className="main-content">
           {/* Active Offers Section */}
           <section>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>Beste Angebote ({filteredOffers.length})</h2>
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Filter aktiv
-              </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '600' }}>
+                Beste Angebote ({filteredOffers.length})
+                {favorites.length > 0 && <span style={{ fontSize: '0.9rem', color: 'var(--brand-primary)', marginLeft: '12px' }}>❤️ {favorites.length} Favorit{favorites.length > 1 ? 'en' : ''}</span>}
+                {compareIds.length > 0 && (
+                  <button onClick={() => setShowCompare(true)} style={{ marginLeft: '12px', background: 'var(--brand-primary)', color: '#fff', border: 'none', borderRadius: '6px', padding: '3px 10px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                    Vergleichen ({compareIds.length})
+                  </button>
+                )}
+              </h2>
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value)}
+                className="input-field"
+                style={{ width: 'auto', padding: '6px 12px', fontSize: '0.85rem' }}
+              >
+                <option value="date">Neueste zuerst</option>
+                <option value="price_asc">Preis aufsteigend</option>
+                <option value="price_desc">Preis absteigend</option>
+              </select>
             </div>
 
             <div className="offers-grid">
               {filteredOffers.map(offer => {
                 const priceInfo = getPriceClassAndIcon(offer.price);
                 return (
-                  <div key={offer.id} className="card offer-card">
+                  <div key={offer.id} className="card offer-card" style={{ position: 'relative', border: compareIds.includes(offer.id) ? '2px solid var(--brand-primary)' : undefined }}>
+                    {/* Favorit-Button */}
+                    <button
+                      onClick={() => toggleFavorite(offer.id)}
+                      title={favorites.includes(offer.id) ? 'Aus Favoriten entfernen' : 'Als Favorit speichern'}
+                      style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.3rem', zIndex: 2, lineHeight: 1 }}
+                    >
+                      {favorites.includes(offer.id) ? '❤️' : '🧡'}
+                    </button>
+
+                    {/* Vergleichs-Checkbox */}
+                    <button
+                      onClick={() => toggleCompare(offer.id)}
+                      title={compareIds.includes(offer.id) ? 'Aus Vergleich entfernen' : 'Zum Vergleich hinzufügen'}
+                      style={{ position: 'absolute', top: '10px', right: '42px', background: compareIds.includes(offer.id) ? 'var(--brand-primary)' : 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', color: '#fff', padding: '2px 6px', zIndex: 2 }}
+                    >
+                      {compareIds.includes(offer.id) ? '✔ Vgl.' : '+ Vgl.'}
+                    </button>
+
                     {priceInfo.badgeClass && (
                       <span className={priceInfo.badgeClass}>
                         ★ {priceInfo.label}
@@ -641,7 +819,7 @@ function App() {
                     </div>
 
                     <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>
-                      📍 {offer.location} | Bj. {offer.year}
+                      📍 {offer.location} | Bj. {offer.year}{offer.km ? ` | ${offer.km.toLocaleString('de-DE')} km` : ''}
                     </div>
 
                     <div className="offer-details">
@@ -657,20 +835,30 @@ function App() {
                       <div className={`price-tag ${priceInfo.className}`}>
                         {offer.price.toLocaleString('de-DE')} €
                       </div>
-                      <a 
-                        href={cleanLink(offer.link || getDirectSearchLink(offer.portal, offer.model, offer.specs))} 
-                        target="_blank" 
-                        rel="noreferrer" 
-                        className="btn-link"
-                        title={offer.portal === 'AutoScout24' || offer.portal === 'Dacianer Forum' 
-                          ? 'Öffnet eine gefilterte Suche auf dem Portal' 
-                          : 'Öffnet direkt das Inserat'}
-                      >
-                        {(offer.portal === 'AutoScout24' || offer.portal === 'Dacianer Forum')
-                          ? 'Zum Portal suchen ↗'
-                          : 'Direktlink zum Angebot ↗'
-                        }
-                      </a>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <a
+                          href={cleanLink(offer.link || getDirectSearchLink(offer.portal, offer.model, offer.specs))}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-link"
+                          title={offer.portal === 'AutoScout24' || offer.portal === 'Dacianer Forum'
+                            ? 'Öffnet eine gefilterte Suche auf dem Portal'
+                            : 'Öffnet direkt das Inserat'}
+                        >
+                          {(offer.portal === 'AutoScout24' || offer.portal === 'Dacianer Forum')
+                            ? 'Zum Portal ↗'
+                            : 'Direktlink ↗'
+                          }
+                        </a>
+                        <button
+                          onClick={() => shareOffer(offer)}
+                          className="btn-link"
+                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                          title="Angebot teilen oder kopieren"
+                        >
+                          📤
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
