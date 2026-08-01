@@ -152,10 +152,6 @@ body {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
-  .sidebar {
-    position: static;
-    top: auto;
-  }
   .hero-header {
     height: auto;
     min-height: 300px;
@@ -600,3 +596,16 @@ body {
   font-size: 0.85rem;
   color: var(--text-secondary);
 }
+
+/* Mobile & Tablet Specific Override (must be at end of file) */
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .sidebar {
+    position: static !important;
+    top: auto !important;
+    max-height: none !important;
+  }
+}
+
