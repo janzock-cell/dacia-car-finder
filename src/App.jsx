@@ -143,6 +143,8 @@ function App() {
     'Dacia II /III': true,
     'Dacia offroad': true,
     'Dacia sleep camp': true,
+    'Dacia Bigster': false,
+    'Dacia Sandero / Stepway': false,
   });
 
   const [selectedSpecs, setSelectedSpecs] = useState({
@@ -152,7 +154,17 @@ function App() {
     'Gas/electro/Benzin': true,
     'Benzin': true,
     'Hybrid': true,
+    'Navi / Navigation': false,
+    'Sitzheizung': false,
+    'Panoramadach': false,
+    'Anhängerkupplung (AHK)': false,
+    '360° Kamera': false,
+    'Tempomat / Abstandstempomat': false,
+    'Elektrische Heckklappe': false,
+    'Notverkauf / Schnäppchen': false,
   });
+
+  const [searchText, setSearchText] = useState('');
 
   const [location, setLocation] = useState('Bad Driburg');
   const [radius, setRadius] = useState('Deutschland');
@@ -223,6 +235,16 @@ function App() {
 
   // Filter-Logik mit intelligenter Synonym-Erkennung für Ausstattungs-Checkboxes
   const filteredOffers = offers.filter(offer => {
+    // Freitextsuche
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase();
+      const inModel = offer.model.toLowerCase().includes(q);
+      const inLocation = offer.location.toLowerCase().includes(q);
+      const inSpecs = offer.specs.some(s => s.toLowerCase().includes(q));
+      const inPortal = offer.portal.toLowerCase().includes(q);
+      if (!inModel && !inLocation && !inSpecs && !inPortal) return false;
+    }
+
     // Modell-Match
     const modelMatch = Object.keys(selectedModels).some(modelKey => {
       if (!selectedModels[modelKey]) return false;
@@ -230,20 +252,26 @@ function App() {
       return offer.model.toLowerCase().includes(cleanKey);
     });
 
-    // Ausstattung-Match mit Synonymen (z.B. Gas/Benzin matcht LPG, Autogas, ECO-G)
+    // Ausstattung-Match mit Synonymen
     const specMatch = Object.keys(selectedSpecs).some(specKey => {
       if (!selectedSpecs[specKey]) return false;
       return offer.specs.some(s => {
         const specLower = s.toLowerCase();
         const keyLower = specKey.toLowerCase();
-        
         if (keyLower === '4x4' && specLower.includes('4x4')) return true;
         if (keyLower === 'bett-umbau' && (specLower.includes('bett') || specLower.includes('sleep') || specLower.includes('camp'))) return true;
         if (keyLower === 'gas/benzin' && (specLower.includes('gas') || specLower.includes('lpg') || specLower.includes('eco-g') || specLower.includes('autogas'))) return true;
         if (keyLower === 'benzin' && (specLower.includes('benzin') || specLower.includes('tce') || specLower.includes('hybrid'))) return true;
         if (keyLower === 'hybrid' && specLower.includes('hybrid')) return true;
         if (keyLower === 'gas/electro/benzin' && (specLower.includes('hybrid') || specLower.includes('electro') || specLower.includes('elec'))) return true;
-        
+        if (keyLower === 'navi / navigation' && (specLower.includes('navi') || specLower.includes('navigation'))) return true;
+        if (keyLower === 'sitzheizung' && specLower.includes('sitz')) return true;
+        if (keyLower === 'panoramadach' && (specLower.includes('panorama') || specLower.includes('glasdach'))) return true;
+        if (keyLower === 'anhängerkupplung (ahk)' && (specLower.includes('ahk') || specLower.includes('anhänger'))) return true;
+        if (keyLower === '360° kamera' && (specLower.includes('360') || specLower.includes('kamera') || specLower.includes('cam'))) return true;
+        if (keyLower === 'tempomat / abstandstempomat' && (specLower.includes('tempo') || specLower.includes('acc') || specLower.includes('abstand'))) return true;
+        if (keyLower === 'elektrische heckklappe' && (specLower.includes('heckklappe') || specLower.includes('electric'))) return true;
+        if (keyLower === 'notverkauf / schnäppchen' && (specLower.includes('notverkauf') || specLower.includes('schnäppchen') || specLower.includes('privat'))) return true;
         return specLower.includes(keyLower);
       });
     });
@@ -476,6 +504,26 @@ function App() {
             <h2 className="filter-title">Suchparameter</h2>
             
             <div className="filter-group">
+              <div className="filter-title">Freitextsuche</div>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="z.B. 4x4, Paderborn, Notverkauf..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ width: '100%' }}
+              />
+              {searchText && (
+                <button 
+                  onClick={() => setSearchText('')} 
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.75rem', padding: '2px 0', textAlign: 'left' }}
+                >
+                  × Suche löschen
+                </button>
+              )}
+            </div>
+
+            <div className="filter-group">
               <div className="filter-title">Modelle</div>
               <div className="checkbox-list" style={{ maxHeight: '250px', overflowY: 'auto', paddingRight: '5px' }}>
                 {Object.keys(selectedModels).map(model => (
@@ -494,7 +542,7 @@ function App() {
 
             <div className="filter-group">
               <div className="filter-title">Ausstattung</div>
-              <div className="checkbox-list">
+              <div className="checkbox-list" style={{ maxHeight: '250px', overflowY: 'auto', paddingRight: '5px' }}>
                 {Object.keys(selectedSpecs).map(spec => (
                   <label key={spec} className="checkbox-label">
                     <input
@@ -614,8 +662,14 @@ function App() {
                         target="_blank" 
                         rel="noreferrer" 
                         className="btn-link"
+                        title={offer.portal === 'AutoScout24' || offer.portal === 'Dacianer Forum' 
+                          ? 'Öffnet eine gefilterte Suche auf dem Portal' 
+                          : 'Öffnet direkt das Inserat'}
                       >
-                        Direktlink zum Angebot ↗
+                        {(offer.portal === 'AutoScout24' || offer.portal === 'Dacianer Forum')
+                          ? 'Zum Portal suchen ↗'
+                          : 'Direktlink zum Angebot ↗'
+                        }
                       </a>
                     </div>
                   </div>
