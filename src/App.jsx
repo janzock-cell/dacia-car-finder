@@ -199,6 +199,8 @@ function App() {
   const [yearFrom, setYearFrom] = useState(2024);
   const [compareIds, setCompareIds] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [isModelsOpen, setIsModelsOpen] = useState(false);
+  const [isSpecsOpen, setIsSpecsOpen] = useState(false);
 
   const toggleFavorite = (id) => {
     setFavorites(prev => {
@@ -639,37 +641,55 @@ function App() {
             </div>
 
             <div className="filter-group">
-              <div className="filter-title">Modelle</div>
-              <div className="checkbox-list" style={{ maxHeight: '250px', overflowY: 'auto', paddingRight: '5px' }}>
-                {Object.keys(selectedModels).map(model => (
-                  <label key={model} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      className="checkbox-input"
-                      checked={selectedModels[model]}
-                      onChange={() => handleModelChange(model)}
-                    />
-                    {model}
-                  </label>
-                ))}
+              <div 
+                className="filter-title" 
+                onClick={() => setIsModelsOpen(!isModelsOpen)}
+                style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}
+              >
+                <span>Modelle <small style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>({Object.values(selectedModels).filter(Boolean).length} aktiv)</small></span>
+                <span style={{ fontSize: '0.8rem' }}>{isModelsOpen ? '▲' : '▼'}</span>
               </div>
+              {isModelsOpen && (
+                <div className="checkbox-list" style={{ maxHeight: '250px', overflowY: 'auto', paddingRight: '5px', marginTop: '8px' }}>
+                  {Object.keys(selectedModels).map(model => (
+                    <label key={model} className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        className="checkbox-input"
+                        checked={selectedModels[model]}
+                        onChange={() => handleModelChange(model)}
+                      />
+                      {model}
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="filter-group">
-              <div className="filter-title">Ausstattung</div>
-              <div className="checkbox-list" style={{ maxHeight: '250px', overflowY: 'auto', paddingRight: '5px' }}>
-                {Object.keys(selectedSpecs).map(spec => (
-                  <label key={spec} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      className="checkbox-input"
-                      checked={selectedSpecs[spec]}
-                      onChange={() => handleSpecChange(spec)}
-                    />
-                    {spec}
-                  </label>
-                ))}
+              <div 
+                className="filter-title" 
+                onClick={() => setIsSpecsOpen(!isSpecsOpen)}
+                style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}
+              >
+                <span>Ausstattung <small style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>({Object.values(selectedSpecs).filter(Boolean).length} aktiv)</small></span>
+                <span style={{ fontSize: '0.8rem' }}>{isSpecsOpen ? '▲' : '▼'}</span>
               </div>
+              {isSpecsOpen && (
+                <div className="checkbox-list" style={{ maxHeight: '250px', overflowY: 'auto', paddingRight: '5px', marginTop: '8px' }}>
+                  {Object.keys(selectedSpecs).map(spec => (
+                    <label key={spec} className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        className="checkbox-input"
+                        checked={selectedSpecs[spec]}
+                        onChange={() => handleSpecChange(spec)}
+                      />
+                      {spec}
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="filter-group">
